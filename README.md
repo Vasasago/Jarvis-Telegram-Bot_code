@@ -1,2 +1,2 @@
 # Jarvis-Telegram-Bot
-Бот-ассистент Jarvis by Vassago
+Бот-ассистент Jarvis by Vassago (исходный код)
