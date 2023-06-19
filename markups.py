@@ -36,6 +36,7 @@ def open_commands():
     for btn in folder_btns:
         commands_btns.append(btn)
 
+
     inline_folders = InlineKeyboardMarkup(row_width=2).add(*commands_btns)
 
     return inline_folders
@@ -72,6 +73,25 @@ def open_folder(folder_name):
 
     return inline_files
 
+main_btns = [KeyboardButton('🤖 Команды Jarvis'),
+             KeyboardButton('🖥 Компьютер'),
+             KeyboardButton('🛠 Управление ботом')]
+
+main_inline = ReplyKeyboardMarkup(resize_keyboard=True).add(*main_btns)
+
+
+pc_btns = [InlineKeyboardButton('📊 Показатели пк', callback_data='pc_control'),
+           InlineKeyboardButton('💿 Программы', callback_data='programs'),
+           InlineKeyboardButton('📂 Проводник', callback_data='explorer'),
+           InlineKeyboardButton('⌨️ Клавиатура', callback_data='keyboard')]
+
+pc_markup = InlineKeyboardMarkup(row_width=1).add(*pc_btns)
+
+
+back_to_pc_markup_btn = InlineKeyboardButton('◀ Назад', callback_data='back_pc')
+
+back_to_pc_markup = InlineKeyboardMarkup(row_width=1).add(back_to_pc_markup_btn)
+
 
 f = [InlineKeyboardButton('≡ F1 ≡', callback_data='f1'), InlineKeyboardButton('≡ F2 ≡', callback_data='f2'),
      InlineKeyboardButton('≡ F3 ≡', callback_data='f3'), InlineKeyboardButton('≡ F4 ≡', callback_data='f4'),
@@ -93,15 +113,8 @@ keys = [InlineKeyboardButton('Space', callback_data='space'),
         InlineKeyboardButton('Up', callback_data='up'),
         InlineKeyboardButton('Down', callback_data='down')]
 
-keyboard_inline = InlineKeyboardMarkup(row_width=4).add(*f, *keys)
+keyboard_inline = InlineKeyboardMarkup(row_width=4).add(*f, *keys, back_to_pc_markup_btn)
 
-main_btns = [KeyboardButton('🤖 Команды Jarvis'),
-             KeyboardButton('⌨ Клавиатура'),
-             KeyboardButton('📂 Проводник'),
-             KeyboardButton('🖥 Программы'),
-             KeyboardButton('🛠 Управление ботом')]
-
-main_inline = ReplyKeyboardMarkup(resize_keyboard=True).add(*main_btns)
 
 service_btns = [InlineKeyboardButton('🖥 Запустить голосового Jarvis', callback_data='start_voice_jarvis'),
                 InlineKeyboardButton('📴 Выключить бота', callback_data='off'),
@@ -110,6 +123,7 @@ service_btns = [InlineKeyboardButton('🖥 Запустить голосовог
                 InlineKeyboardButton('⬇ Скачать лог', callback_data='log')]
 
 service_markup = InlineKeyboardMarkup(row_width=1).add(*service_btns)
+
 
 voice_speakers = [InlineKeyboardButton('👨‍🦱 ‍Айдар', callback_data='voice-0'),
                   InlineKeyboardButton('🧑 Байя', callback_data='voice-1'),
@@ -127,11 +141,13 @@ audio_speakers = [InlineKeyboardButton('👨‍🦱 ‍Айдар', callback_dat
 
 audio_markup = InlineKeyboardMarkup(row_width=1).add(*audio_speakers)
 
+
 languages = [InlineKeyboardButton('🇷🇺 Русский', callback_data='RU-ru'),
              InlineKeyboardButton('🇺🇦 Украинский', callback_data='UK-uk'),
              InlineKeyboardButton('🇺🇸 Английский', callback_data='EN-en')]
 
 langs_markup = InlineKeyboardMarkup(row_width=1).add(*languages)
+
 
 script_file_btns = [InlineKeyboardButton('🖥 Запустить', callback_data='run'),
                     InlineKeyboardButton('📲 Скачать', callback_data='download'),
@@ -143,4 +159,4 @@ script_file_markup = InlineKeyboardMarkup(row_width=1).add(*script_file_btns)
 
 open_lnk_btn = InlineKeyboardButton('📂 Открыть папку', callback_data='open_lnk')
 
-open_lnk_markup = InlineKeyboardMarkup(row_width=1).add(open_lnk_btn)
+open_lnk_markup = InlineKeyboardMarkup(row_width=1).add(open_lnk_btn, back_to_pc_markup_btn)

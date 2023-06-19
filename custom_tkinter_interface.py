@@ -45,9 +45,13 @@ class checker_settings:
     def check_commands_path(path: str) -> bool:
         # Проверка, есть ли папка commands в конце пути
         all_path = os.path.join(path, 'commands')
-        if os.path.isdir(all_path) or path.split('/')[-1] == 'commands':
+        if os.path.isdir(all_path):
             create_bot.console += f'set cmd path: {path}/commands.\n'  # Установка пути команд
             create_bot.root_folder = path + '/commands'
+            return True
+        elif path.split('/')[-1] == 'commands' or path.split('\\')[-1] == 'commands':
+            create_bot.console += f'set cmd path: {path}\n'  # Установка пути команд
+            create_bot.root_folder = path
             return True
         else:
             return False
@@ -116,7 +120,7 @@ class main_funcs:
     def check_internet_connection():
         global errors, is_start
         try:
-            subprocess.check_output(["ping", "-n", "1", "www.google.com"], timeout=5)
+            requests.get('https://google.com')
             return True
         except Exception:
             errors = errors + 1
@@ -143,6 +147,11 @@ class main_funcs:
                     check_bot.configure(state='enabled')
                     check_connection_label.configure(text='подключено к интернету', text_color='green')
                     check_connection_label.place(x=0, y=360)
+
+                else:
+                    check_bot.deselect()
+                    check_bot.configure(state='disabled')
+                    check_bot.configure(text='Бот отключен')
             else:
                 # Подключение к интернету отсутствует
                 self.stop_bot()
@@ -284,12 +293,21 @@ class buttons:
 
         if commands_path != create_bot.root_folder:
             if checker_settings.check_commands_path(commands_path):
-                create_bot.root_folder = commands_path
-                config.set('tg-bot', 'commands_folder', f'{commands_path}')
+
+                all_path = os.path.join(commands_path, 'commands')
+                if os.path.isdir(all_path):
+                    create_bot.console += f'set cmd path: {commands_path}/commands.\n'  # Установка пути команд
+                    create_bot.root_folder = commands_path + '/commands'
+                elif commands_path.split('/')[-1] == 'commands' or commands_path.split('\\')[-1] == 'commands':
+                    create_bot.console += f'set cmd path: {commands_path}\n'  # Установка пути команд
+
+                config.set('tg-bot', 'commands_folder', f'{create_bot.root_folder}')
                 self.animate_color(commands_path_entry, "#00FF00")
+                commands_path_entry.delete(0, customtkinter.END)
+                commands_path_entry.insert(0, create_bot.root_folder)
             else:
                 commands_path_entry.delete(0, customtkinter.END)
-                commands_path_entry.insert(0, commands_folder)
+                commands_path_entry.insert(0, create_bot.root_folder)
                 commands_path_entry.place(x=10, y=240)
                 self.animate_color(commands_path_entry, "#FF0000")
 
@@ -543,6 +561,14 @@ class buttons:
         telegram.configure(text_color='magenta3')
 
     @staticmethod
+    def on_enter_github_button(event):
+        git_hub.configure(text_color='DodgerBlue2')
+
+    @staticmethod
+    def on_leave_github_button(event):
+        git_hub.configure(text_color='DodgerBlue3')
+
+    @staticmethod
     def key_bot(flag=False):
         global start_bot_thread, is_check_bot_running
         try:
@@ -584,9 +610,12 @@ class buttons:
     def go_telegram():
         webbrowser.open(url='https://t.me/jarvis_bot_by_vassago')
 
+    @staticmethod
+    def go_github():
+        webbrowser.open(url='https://github.com/Vasasago/Jarvis-Telegram-Bot_code')
+
 
 """ИНИЦИАЛИЗИРУЕМ КЛАССЫ"""
-
 
 checker_settings = checker_settings()
 main = main_funcs()
@@ -773,7 +802,16 @@ telegram_image = customtkinter.CTkImage(light_image=image)
 telegram = customtkinter.CTkButton(root, text="Наш телеграм канал",
                                 text_color='magenta3', bg_color='gray10',
                                    fg_color='gray10', hover_color='gray10', image=telegram_image, command=buttons.go_telegram)
-telegram.place(x=115, y=480)
+telegram.place(x=20, y=480)
+
+image = PIL.Image.open("icons\\github.png")
+git_hub_image = customtkinter.CTkImage(dark_image=image)
+
+git_hub = customtkinter.CTkButton(root, text="Репозиторий с кодом",
+                                text_color='DodgerBlue3', bg_color='gray10',
+                                   fg_color='gray10', hover_color='gray10', image=git_hub_image, command=buttons.go_github)
+git_hub.place(x=200, y=480)
+
 
 
 """БИНДЫ"""
@@ -797,6 +835,10 @@ select_downloads_button.bind('<Leave>', buttons.on_leave_select_downloads_button
 # Кнопка перехода в телеграм канал
 telegram.bind('<Enter>', buttons.on_enter_telegram_button)
 telegram.bind('<Leave>', buttons.on_leave_telegram_button)
+
+# Кнопка перехода на гитхаб
+git_hub.bind('<Enter>', buttons.on_enter_github_button)
+git_hub.bind('<Leave>', buttons.on_leave_github_button)
 
 
 """УСЛОВИЯ"""
@@ -822,16 +864,14 @@ root.protocol("WM_DELETE_WINDOW", buttons.close_window)
 
 """СТАРТУЕМ"""
 
-# Проверка установки Silero TTS и инициализация модели
 tts.start_tts()
 
 # Запускаем проверку соединения и первоначальное выполнение функции в отдельном потоке
 main.start_check_bot_thread()
-
 # Запускаем обновление консоли
 main.update_scrollbar()
-
 # Запуск главного цикла приложения
 root.mainloop()
+
 
 

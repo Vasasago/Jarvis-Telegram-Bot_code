@@ -19,7 +19,7 @@ async def on_startup(dp):
         create_bot.flag = True
         run_bot()
     else:
-        create_bot.console += '\nChat id не найден.\nНажмите /start, чтобы добавить ID.\n'
+        create_bot.console += '\nUser id не найден.\nНажмите /start, чтобы добавить ID.\n'
         create_bot.flag = True
         run_bot()
 
@@ -35,20 +35,13 @@ def run_bot():
         commands_hands.commands_handlers_messages(dp)
         files_hands.message_handlers_files(dp)
         callbacks_messages_hands.callbacks_messages_handlers(dp)
-    else:
-        pass
-
-
-new_loop = asyncio.new_event_loop()
 
 
 def start_bot():
     global dp, bot
-    try:
-        bot, dp = create_bot.create()
+    bot, dp = create_bot.create()
+    if bot is not None and dp is not None:
         executor.start_polling(dp, on_startup=on_startup, on_shutdown=on_shutdown, timeout=10)
-    except:
-        pass
 
 def stop_bot():
     global dp, new_loop
@@ -58,6 +51,10 @@ def stop_bot():
         create_bot.flag = False
     except:
         pass
+
+
+new_loop = asyncio.new_event_loop()
+
 
 def start():
     global new_loop
