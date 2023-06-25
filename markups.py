@@ -1,5 +1,6 @@
 import configparser
 
+import psutil
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
 import os
 
@@ -18,7 +19,7 @@ def open_commands():
             return folders
 
         except Exception as e:
-            logger.logging_func(e)
+            logger.py_logger.error(f"{e}\n\n")
 
     config.read('config.ini')
     folder_path = config.get('tg-bot', 'commands_folder')
@@ -49,7 +50,7 @@ def open_folder(folder_name):
             return exe_files
 
         except Exception as e:
-            logger.logging_func(e)
+            logger.py_logger.error(f"{e}\n\n")
 
     config.read('config.ini')
     folder_path = config.get('tg-bot', 'commands_folder')
@@ -83,14 +84,18 @@ main_inline = ReplyKeyboardMarkup(resize_keyboard=True).add(*main_btns)
 pc_btns = [InlineKeyboardButton('📊 Показатели пк', callback_data='pc_control'),
            InlineKeyboardButton('💿 Программы', callback_data='programs'),
            InlineKeyboardButton('📂 Проводник', callback_data='explorer'),
-           InlineKeyboardButton('⌨️ Клавиатура', callback_data='keyboard')]
+           InlineKeyboardButton('💻 Команды Windows', callback_data='commands_windows'),
+           InlineKeyboardButton('💽 Диспетчер задач', callback_data='tasks'),
+           InlineKeyboardButton('⌨️ Клавиатура', callback_data='keyboard'),
+           InlineKeyboardButton('🐁 Мышь', callback_data='mouse'),]
 
-pc_markup = InlineKeyboardMarkup(row_width=1).add(*pc_btns)
+pc_markup = InlineKeyboardMarkup(row_width=2).add(*pc_btns)
 
 
+update_pc_control_btn = InlineKeyboardButton('Обновить', callback_data='pc_control')
 back_to_pc_markup_btn = InlineKeyboardButton('◀ Назад', callback_data='back_pc')
 
-back_to_pc_markup = InlineKeyboardMarkup(row_width=1).add(back_to_pc_markup_btn)
+back_to_pc_markup = InlineKeyboardMarkup(row_width=1).add(update_pc_control_btn, back_to_pc_markup_btn)
 
 
 f = [InlineKeyboardButton('≡ F1 ≡', callback_data='f1'), InlineKeyboardButton('≡ F2 ≡', callback_data='f2'),
@@ -114,6 +119,24 @@ keys = [InlineKeyboardButton('Space', callback_data='space'),
         InlineKeyboardButton('Down', callback_data='down')]
 
 keyboard_inline = InlineKeyboardMarkup(row_width=4).add(*f, *keys, back_to_pc_markup_btn)
+
+
+mouse_btns = [
+    InlineKeyboardButton('вверх 10', callback_data='up_10'),
+    InlineKeyboardButton('вниз 10', callback_data='down_10'),
+    InlineKeyboardButton('влево 10', callback_data='left_10'),
+    InlineKeyboardButton('вправо 10', callback_data='right_10'),
+
+    InlineKeyboardButton('вверх 100', callback_data='up_100'),
+    InlineKeyboardButton('вниз 100', callback_data='down_100'),
+    InlineKeyboardButton('влево 100', callback_data='left_100'),
+    InlineKeyboardButton('вправо 100', callback_data='right_100'),
+
+    InlineKeyboardButton('ЛКМ', callback_data='left_0'),
+    InlineKeyboardButton('ПКМ', callback_data='right_0'),
+]
+
+Mouse_markup = InlineKeyboardMarkup(row_width=2).add(*mouse_btns, back_to_pc_markup_btn)
 
 
 service_btns = [InlineKeyboardButton('🖥 Запустить голосового Jarvis', callback_data='start_voice_jarvis'),
@@ -160,3 +183,88 @@ script_file_markup = InlineKeyboardMarkup(row_width=1).add(*script_file_btns)
 open_lnk_btn = InlineKeyboardButton('📂 Открыть папку', callback_data='open_lnk')
 
 open_lnk_markup = InlineKeyboardMarkup(row_width=1).add(open_lnk_btn, back_to_pc_markup_btn)
+
+
+close_dialog_btn = InlineKeyboardButton('✖ Закончить диалог', callback_data='close_dialog')
+
+gpt_markup = InlineKeyboardMarkup(row_width=1).add(close_dialog_btn)
+
+
+open_link_btn = InlineKeyboardButton('🌐 Открыть ссылку', callback_data='open_link')
+
+open_link_markup = InlineKeyboardMarkup(row_width=1).add(open_link_btn)
+
+
+commands_windows_btns1 = [
+    InlineKeyboardButton('Выключить пк', callback_data='shutdown_pc.exe'),
+    InlineKeyboardButton('Отмена выключения', callback_data='cancel_shutdown_pc.exe'),
+    InlineKeyboardButton('Заблокировать пк', callback_data='block_pc.exe'),
+    InlineKeyboardButton('Спящий режим', callback_data='sleep_pc.exe'),
+    InlineKeyboardButton('Перезагрузка', callback_data='reboot_pc.exe'),
+    InlineKeyboardButton('Буфер обмена', callback_data='clipboard.exe'),
+    InlineKeyboardButton('Очистить корзину', callback_data='empty_trash.exe'),
+    InlineKeyboardButton('Диспетчер задач', callback_data='task_manager.exe'),
+    InlineKeyboardButton('Открыть настройки', callback_data='open_settings.exe'),
+    InlineKeyboardButton('Закрыть настройки', callback_data='close_settings.exe'),
+    InlineKeyboardButton('Свернуть все окна', callback_data='roll_up_windows.exe'),
+    InlineKeyboardButton('Свернуть текущее окно', callback_data='minimize_current_window.exe'),
+    InlineKeyboardButton('Текущее окно на весь экран', callback_data='maximize_current_window.exe'),
+    InlineKeyboardButton('Сменить раскладку', callback_data='change_language.exe'),
+    InlineKeyboardButton('Сделать скриншот', callback_data='screenshot.exe'),
+    InlineKeyboardButton('Открыть загрузки', callback_data='open_downloads.exe'),
+]
+
+commands_windows_btns2 = [
+    InlineKeyboardButton('Звук', callback_data='mute_volume.exe'),
+    InlineKeyboardButton('Звук на минимум', callback_data='min_volume.exe'),
+    InlineKeyboardButton('Сделать тише', callback_data='sound_down.exe'),
+    InlineKeyboardButton('Сделать громче', callback_data='sound_up.exe'),
+    InlineKeyboardButton('Громкость 20', callback_data='set_sound_20.exe'),
+    InlineKeyboardButton('Громкость 50', callback_data='set_sound_50.exe'),
+    InlineKeyboardButton('Громкость 80', callback_data='set_sound_80.exe'),
+    InlineKeyboardButton('Громкость 100', callback_data='set_sound_100.exe'),
+    InlineKeyboardButton('Переключить на динамики', callback_data='switch_to_speakers.exe'),
+    InlineKeyboardButton('Переключить на наушники', callback_data='switch_to_headphones.exe'),
+]
+
+go_next = InlineKeyboardButton('➡️ Следующая страница', callback_data='next')
+go_back = InlineKeyboardButton('⬅️ Предыдущая страница', callback_data='back')
+
+
+def commands_windows(page: int) -> InlineKeyboardMarkup:
+    commands_windows_markup = InlineKeyboardMarkup(row_width=2)
+    if page == 0:
+        commands_windows_markup.add(*commands_windows_btns1, go_next, back_to_pc_markup_btn)
+    else:
+        commands_windows_markup.add(*commands_windows_btns2, go_back, back_to_pc_markup_btn)
+
+    return commands_windows_markup
+
+
+def get_running_applications() -> list:
+    running_apps = []
+
+    # Получение списка всех запущенных процессов
+    for proc in psutil.process_iter(['name', 'username']):
+        try:
+            proc_info = proc.as_dict(attrs=['name', 'username', 'exe'])
+            proc_name = proc_info['name']
+            proc_username = proc_info['username']
+            proc_exe = proc_info['exe']
+
+            # Проверка на системные программы и фоновые процессы
+            if proc_username and proc_exe and proc_name not in running_apps:
+                running_apps.append(proc_name)  # Добавление названия процесса в массив running_apps
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            pass
+
+    return running_apps
+
+
+def tasks() -> list:
+    running_apps = get_running_applications()
+
+    running_apps_btns = [InlineKeyboardButton(app_name, callback_data=app_name) for app_name in running_apps]
+    running_apps_markup = InlineKeyboardMarkup(row_width=2).add(*running_apps_btns, back_to_pc_markup_btn)
+
+    return [running_apps_btns, running_apps_markup]

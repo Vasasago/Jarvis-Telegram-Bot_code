@@ -5,7 +5,10 @@ import sys
 import requests
 from aiogram import Bot, Dispatcher
 
-bot_version = '3.1.0'  # Версия бота
+import logger
+
+
+bot_version = '3.1.5'  # Версия бота
 
 bot_token = None  # Токен бота
 chatgpt_token = None  # Токен OpenAI
@@ -43,7 +46,10 @@ description = "_Доступные команды:_\n" \
               "_При выборе файла в проводнике бота:_\n" \
               "🔸 Запуск файла в приложении по-умолчанию.\n" \
               "🔸 Скачивание файла.\n\n" \
-              "_Чтобы открыть ссылку на пк, просто отправьте ее боту без каких-либо команд_"
+              "_Чтобы открыть ссылку на пк, просто отправьте ее боту без каких-либо команд_\n\n" \
+              "_Для управления мышью напишите:_\n" \
+              "🔸 Движение: (вверх, вниз, вправо, влево) + [число пикселей]\n" \
+              "🔸 Нажатие: лкм, пкм."
 
 
 flag = False
@@ -102,16 +108,18 @@ else:
 os.makedirs(os.path.dirname(os.path.abspath(sys.argv[0])) + '\\lnk', exist_ok=True)
 
 
+# Проверка токена бота перед созданием экземпляра
 def check_bot_token(token):
     try:
         url = f'https://api.telegram.org/bot{token}/getMe'
-        response = requests.get(url)
+        response = requests.get(url, timeout=30)
         if response.status_code == 200:
             return True
         else:
             return False
 
-    except Exception:
+    except Exception as e:
+        logger.py_logger.error(f"{e}\n\n")
         return False
 
 def create():

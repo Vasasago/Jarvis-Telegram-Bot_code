@@ -32,6 +32,7 @@ url = 'https://models.silero.ai/models/tts/ru/v3_1_ru.pt'
 is_run = True
 
 
+# Форматируем оставшееся время по минутам и секундам
 def format_time(seconds):
     minutes = int(seconds // 60)
     seconds = int(seconds % 60)
@@ -52,7 +53,6 @@ def start_tts():
                 with open(local_file, 'wb') as f:
                     start_time = time.time()
                     downloaded_size = 0
-                    prev_time = start_time
 
                     for data in response.iter_content(chunk_size=4096):
                         if is_run:
@@ -60,10 +60,13 @@ def start_tts():
                             downloaded_size += len(data)
                             progress = min(downloaded_size / total_size, 1.0)
                             progress_bar.set(progress)
+
                             try:
                                 progress_bar.update()
-                            except:
-                                pass
+
+                            except Exception as e:
+                                logger.py_logger.error(f"{e}\n\n")
+
                             progress_label.configure(text=f"Прогресс: {progress * 100:.2f}%")
 
                             remaining_size = total_size - downloaded_size
@@ -83,12 +86,11 @@ def start_tts():
                                 time_left = format_time(remaining_time)
                                 time_label.configure(text=f"Оставшееся время: {time_left}")
 
-                            prev_time = curr_time
-
                             try:
                                 root.update()
-                            except:
-                                pass
+
+                            except Exception as e:
+                                logger.py_logger.error(f"{e}\n\n")
 
                             if progress == 1.0:
                                 root.destroy()  # Закрыть окно после завершения загрузки
@@ -99,7 +101,7 @@ def start_tts():
                             return
 
             except Exception as e:
-                logger.logging_func(e)
+                logger.py_logger.error(f"{e}\n\n")
                 root.destroy()
 
         else:
@@ -114,8 +116,9 @@ def start_tts():
     if size < 61896251:
         try:
             os.remove('model.pt')
-        except:
-            pass
+
+        except Exception as e:
+            logger.py_logger.error(f"{e}\n\n")
 
         try:
             customtkinter.set_appearance_mode('dark')
@@ -154,8 +157,8 @@ def start_tts():
 
             root.wait_window()
             return
-        except:
-            pass
+        except Exception as e:
+            logger.py_logger.error(f"{e}\n\n")
 
     return
 
@@ -167,9 +170,7 @@ def wrap_numbers(text):
     return result
 
 
-# Воспроизводим текст
-
-
+# Делим текст на фрагменты по 1000 символов
 def split_text(text, max_length):
     if len(text) <= max_length:
         return [text]
@@ -193,6 +194,7 @@ def split_text(text, max_length):
     return fragments
 
 
+# Воспроизведение
 def va_speak(what: str, voice: bool, speaker: str):
     global model
 
@@ -221,6 +223,7 @@ def va_speak(what: str, voice: bool, speaker: str):
 
             audio_combined = np.concatenate(audio_fragments)
 
+            # Если голосовое сообщение, возвращаем его. Если нет - воспроизводим на пк
             if voice is True:
                 # Сохранение аудио в файл
                 with open('audio.mp3', 'w') as file:
@@ -236,7 +239,7 @@ def va_speak(what: str, voice: bool, speaker: str):
                 sd.play(audio_combined, sample_rate * 1.05)
 
         except Exception as e:
-            logger.logging_func(e)
+            logger.py_logger.error(f"{e}\n\n")
 
     else:
         create_bot.console += f'\nОшибка: модель Silero TTS не установлена.\n\n'

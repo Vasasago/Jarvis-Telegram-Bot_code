@@ -2,65 +2,78 @@ import asyncio
 
 from aiogram.utils import executor
 import create_bot
+import logger
 import markups
 
-from handlers import callbacks_messages_hands, files_hands, commands_hands
+from handlers import callbacks_messages_hands, files_hands, commands_hands, exceptions_hands
+
 
 user_id = create_bot.user_id
 bot, dp = create_bot.create()
 
+bot_loop = asyncio.new_event_loop()
 
+# При старте
 async def on_startup(dp):
     global user_id, bot
     user_id = create_bot.user_id
     if user_id != '':
-        create_bot.console += 'Бот запущен!\n'
+        create_bot.console += 'Start polling...\n'
         await bot.send_message(chat_id=user_id, text="✅ Бот запущен!", reply_markup=markups.main_inline)
         create_bot.flag = True
-        run_bot()
+        start_register_handlers()
     else:
         create_bot.console += '\nUser id не найден.\nНажмите /start, чтобы добавить ID.\n'
         create_bot.flag = True
-        run_bot()
+        start_register_handlers()
 
 
+# При отключении
 async def on_shutdown(dp):
-    create_bot.console += 'Бот отключен!\n'
+    create_bot.console += 'Stop polling...\n'
     await bot.send_message(chat_id=user_id, text="📴 Бот отключен!")
     create_bot.flag = False
 
 
-def run_bot():
+# Вызов регистраторов хендлеров
+def start_register_handlers():
+    global bot, dp
     if create_bot.flag:
+        commands_hands.copy_bot()
+        callbacks_messages_hands.copy_bot()
+        files_hands.copy_bot()
+
         commands_hands.commands_handlers_messages(dp)
         files_hands.message_handlers_files(dp)
         callbacks_messages_hands.callbacks_messages_handlers(dp)
+        exceptions_hands.register_exceptions(dp)
 
 
-def start_bot():
-    global dp, bot
-    bot, dp = create_bot.create()
-    if bot is not None and dp is not None:
-        executor.start_polling(dp, on_startup=on_startup, on_shutdown=on_shutdown, timeout=10)
-
+# Остановка поллинга
 def stop_bot():
-    global dp, new_loop
+    global dp, bot_loop
     try:
         dp.stop_polling()
-        new_loop.stop()
+        bot_loop.stop()
         create_bot.flag = False
-    except:
-        pass
+
+    except Exception as e:
+        logger.py_logger.error(f"{e}\n\n")
 
 
-new_loop = asyncio.new_event_loop()
-
-
+# Начало поллинга
 def start():
-    global new_loop
+    global bot_loop, dp, bot
+
+    bot, dp = create_bot.create()
+
     try:
-        asyncio.set_event_loop(new_loop)
-        new_loop.run_until_complete(start_bot())
-        create_bot.flag = True
-    except:
-        pass
+        # Если бот создан, запускаем поллинг
+        if bot is not None and dp is not None:
+            asyncio.set_event_loop(bot_loop)
+            bot_loop.create_task(executor.start_polling(dispatcher=dp, on_startup=on_startup, on_shutdown=on_shutdown, timeout=30))
+            bot_loop.run_forever()
+
+            create_bot.flag = True
+    except Exception as e:
+        logger.py_logger.error(f"{e}\n\n")
