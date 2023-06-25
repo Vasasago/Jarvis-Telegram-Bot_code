@@ -1,11 +1,10 @@
 import os
-from tkinter import messagebox
 
 from aiogram import types, Dispatcher
 
 import create_bot
+import logger
 import markups
-
 import soundfile as sf
 
 edit_msgs = []
@@ -20,8 +19,14 @@ def copy_bot():
     global bot, dp
     bot, dp = create_bot.create()
 
-def show_error_message(message):
-    messagebox.showerror("Ошибка", message)
+
+# проверка id пользователя
+async def check_user_id(id_from_user):
+    if str(id_from_user) != str(user_id):
+        await bot.send_message(chat_id=id_from_user, text="❗ У вас нет доступа к этому боту!")
+        return False
+    else:
+        return True
 
 
 # Функция для сохранения файла
@@ -63,17 +68,15 @@ async def save_file(file_id, file_name, is_photo=False, is_video=False):
 
     except Exception as e:
         create_bot.console += f'\nОшибка при скачивании файла: {e}\n'
-        show_error_message(f'Ошибка при скачивании файла: {e}')
         return False
 
 
 # Обработчик документов
-# @dp.message_handler(content_types=[types.ContentType.DOCUMENT, types.ContentType.PHOTO, types.ContentType.VIDEO])
 async def handle_document(message: types.Message):
     script_path = create_bot.script_path
     user_id = create_bot.user_id
 
-    if str(message.from_user.id) == str(user_id):
+    if await check_user_id(message.from_user.id):
         file = None
         create_bot.edit_msg = await bot.send_message(chat_id=user_id, text=f'⏳ Идёт сохранение.')
         edit_msgs.append(create_bot.edit_msg)
@@ -84,6 +87,7 @@ async def handle_document(message: types.Message):
             file = message.photo
         elif message.video:
             file = message.video
+
 
         if message.photo:
             file_name = str(file[-1].file_id)[:20] + '.png'
@@ -123,16 +127,13 @@ async def handle_document(message: types.Message):
                 await bot.edit_message_text(chat_id=user_id, message_id=create_bot.edit_msg.message_id,
                                             text='🫡При сохранении файла возникла ошибка. Подробнее читайте в Консоли.')
 
-    else:
-        await message.answer("❗ У вас нет доступа к этому боту!")
-
 
 # распознавание голосовых сообщений
-# @dp.message_handler(content_types=types.ContentType.VOICE)
 async def voice_message_handler(message: types.Message):
     global output_file, user_id
     user_id = create_bot.user_id
-    if str(message.from_user.id) == str(user_id):
+
+    if await check_user_id(message.from_user.id):
         create_bot.edit_msg = await bot.send_message(chat_id=user_id, text=f'⏳ Идёт распознавание.')
         # # Получаем информацию о голосовом сообщении
         voice = message.voice
@@ -160,14 +161,12 @@ async def voice_message_handler(message: types.Message):
                                                           text='😜 Выберите язык распознавания:',
                                                           reply_markup=markups.langs_markup)
 
-    else:
-        await message.answer("❗ У вас нет доступа к этому боту!")
-
 
 def message_handlers_files(dp: Dispatcher):
     try:
         dp.register_message_handler(handle_document, content_types=[types.ContentType.DOCUMENT, types.ContentType.PHOTO,
                                                                     types.ContentType.VIDEO])
         dp.register_message_handler(voice_message_handler, content_types=types.ContentType.VOICE)
-    except:
-        pass
+
+    except Exception as e:
+        logger.py_logger.error(f"{e}\n\n")

@@ -1,16 +1,19 @@
 import os
-from tkinter import messagebox
 
 import keyboard
 import openai
+import pyautogui
 import requests
 from aiogram import types, Dispatcher
+from aiogram.dispatcher import FSMContext
+from aiogram.dispatcher.filters.state import StatesGroup, State
 from colorama import init
 
 import create_bot
 import logger
 import markups
 from create_bot import bot_version
+
 
 user_id = create_bot.user_id
 chatgpt_token = create_bot.chatgpt_token
@@ -26,10 +29,6 @@ init()
 def copy_bot():
     global bot, dp
     bot, dp = create_bot.create()
-
-
-def show_error_message(message):
-    messagebox.showerror("Ошибка", message)
 
 
 async def add_downloads_folder(path):
@@ -50,13 +49,24 @@ def check_openai_token(token):
         }
         response = requests.get(url, headers=headers)
 
-    except Exception:
+    except Exception as e:
+        create_bot.console += f'\nОшибка проверки ключа\n'
+        logger.py_logger.error(f"{e}\n\n")
         return False
 
     if response.status_code == 200:
         return True
     else:
         return False
+
+
+# проверка id пользователя
+async def check_user_id(id_from_user):
+    if str(id_from_user) != str(user_id):
+        await bot.send_message(chat_id=id_from_user, text="❗ У вас нет доступа к этому боту!")
+        return False
+    else:
+        return True
 
 
 # @dp.message_handler(commands=['start'])
@@ -73,33 +83,17 @@ async def start(message: types.Message):
             create_bot.user_id = user_id
             create_bot.console += f'User ID: {str(create_bot.user_id)}\n'
 
-    if str(message.from_user.id) == str(user_id):
+    if await check_user_id(message.from_user.id):
         await message.answer("🙋 *Добро пожаловать в бота для вашего личного ассистента Jarvis!*\n\n"
-                             f"*Jarvis-Bot V{bot_version}*\n\n"
-                             "_Доступные команды:_\n"
-                             "🔸 /message \[текст] - отправить текст на ваш компьютер.\n"
-                             "🔸 /voice \[текст] - прислать голосовое сообщение с вашим текстом.\n"
-                             "🔸 /audio \[текст] - озвучить текст на вашем компьютере.\n"
-                             "🔸 /dalle \[текст] - сгенерировать изображение.\n"
-                             "🔸 /link \[ссылка] - открыть ссылку в браузере.\n\n"
-                             "_Доступные изменения:_\n"
-                             "🔸 /set\_cmd\_path \[путь] - изменить путь к командам.\n"
-                             "🔸 /set\_downloads\_path \[путь] - изменить путь к загрузкам.\n"
-                             "🔸 /set\_gpt\_token \[токен] - изменить токен OpenAI.\n\n"
-                             "_При выборе файла в проводнике бота:_\n"
-                             "🔸 Запуск файла в приложении по-умолчанию.\n"
-                             "🔸 Скачивание файла.",
+                             f"*Jarvis-Bot V{bot_version}*\n\n{create_bot.description}",
                              reply_markup=markups.main_inline, parse_mode="Markdown")
-
-    else:
-        await message.answer("❗ У вас нет доступа к этому боту!")
 
 
 # @dp.message_handler(commands=['message'])
 async def message_com(message: types.Message):
     global user_id
     user_id = create_bot.user_id
-    if str(message.from_user.id) == str(user_id):
+    if await check_user_id(message.from_user.id):
         if message.text.replace('/message', "").lstrip() == '':
             await message.answer("❗ Текст не был введён!", reply_markup=markups.main_inline)
 
@@ -107,35 +101,33 @@ async def message_com(message: types.Message):
             keyboard.write(message.text.replace('/message', "").lstrip())
             await message.answer("✅ Текст отправлен!", reply_markup=markups.main_inline)
 
-    else:
-        await message.answer("❗ У вас нет доступа к этому боту!")
-
 
 # @dp.message_handler(commands=['voice'])
 async def voice_com(message: types.Message):
     global user_id
     user_id = create_bot.user_id
-    if str(message.from_user.id) == str(user_id):
+    if await check_user_id(message.from_user.id):
         if message.text.replace('/voice', "").lstrip() == '':
             await message.answer("❗ Текст не был введён!", reply_markup=markups.main_inline)
 
         else:
             create_bot.console += f'voice: {message.text.replace("/voice", "").lstrip()}\n'
 
-            create_bot.edit_msg = await bot.send_message(chat_id=user_id, text='🗣 Выберите голос для озвучки:',
-                                                         reply_markup=markups.voice_markup)
+            try:
+                create_bot.edit_msg = await bot.send_message(chat_id=user_id, text='🗣 Выберите голос для озвучки:',
+                                                             reply_markup=markups.voice_markup)
+
+            except Exception as e:
+                logger.py_logger.error(f"{e}\n\n")
 
             create_bot.text_to_speech = message.text.replace('/voice', "").lstrip()
-
-    else:
-        await message.answer("❗ У вас нет доступа к этому боту!")
 
 
 # @dp.message_handler(commands=['audio'])
 async def audio_com(message: types.Message):
     global user_id
     user_id = create_bot.user_id
-    if str(message.from_user.id) == str(user_id):
+    if await check_user_id(message.from_user.id):
         if message.text.replace('/audio', "").lstrip() == '':
             await message.answer("❗ Текст не был введён!", reply_markup=markups.main_inline)
 
@@ -147,15 +139,12 @@ async def audio_com(message: types.Message):
 
             create_bot.text_to_speech = message.text.replace('/audio', "").lstrip()
 
-    else:
-        await message.answer("❗ У вас нет доступа к этому боту!")
-
 
 # @dp.message_handler(commands=['dalle'])
 async def send_image(message: types.Message):
     global user_id
     user_id = create_bot.user_id
-    if str(message.from_user.id) == str(user_id):
+    if await check_user_id(message.from_user.id):
         if message.text.replace('/dalle', "").lstrip() != '':
             create_bot.edit_msg = await message.answer("⏳ Ваш запрос отправлен.")
             create_bot.console += f'DALL-E: {message.text.replace("/dalle", "").lstrip()}\n'
@@ -170,8 +159,7 @@ async def send_image(message: types.Message):
 
             except openai.error.TryAgain as e:
                 create_bot.console += f'\nОшибка dall-e: {e}\n'
-                show_error_message(f'Ошибка dall-e: {e}')
-                logger.logging_func(e)
+                logger.py_logger.error(f"{e}\n\n")
 
                 await bot.edit_message_text(chat_id=user_id, message_id=create_bot.edit_msg.message_id,
                                             text='🫡Не удалось выполнить запрос. Попробуйте снова.')
@@ -179,8 +167,7 @@ async def send_image(message: types.Message):
             # Обработка других исключений openai.error
             except Exception as e:
                 create_bot.console += f'\nОшибка dall-e: {e}\n'
-                show_error_message(f'Ошибка dall-e: {e}')
-                logger.logging_func(e)
+                logger.py_logger.error(f"{e}\n\n")
 
                 await bot.edit_message_text(chat_id=user_id, message_id=create_bot.edit_msg.message_id,
                                             text='🫡Не удалось выполнить запрос. Подробнее читайте в Консоли.')
@@ -188,15 +175,12 @@ async def send_image(message: types.Message):
         else:
             await message.answer("❗ Запрос не найден.")
 
-    else:
-        await message.answer("❗ У вас нет доступа к этому боту!")
-
 
 # @dp.message_handler(commands=['set_cmd_path'])
 async def set_cmd_path(message: types.Message):
     global user_id
     user_id = create_bot.user_id
-    if str(message.from_user.id) == str(user_id):
+    if await check_user_id(message.from_user.id):
         if message.text.replace('/set_cmd_path', "").lstrip() == '':
             await bot.send_message(chat_id=user_id, text=f'❗ Путь не найден.')
 
@@ -234,15 +218,12 @@ async def set_cmd_path(message: types.Message):
                 else:
                     await message.answer("❗ Указанный путь не существует.")
 
-    else:
-        await message.answer("❗ У вас нет доступа к этому боту!")
-
 
 # @dp.message_handler(commands=['set_gpt_token'])
 async def set_gpt_token(message: types.Message):
     global chatgpt_token, user_id
     user_id = create_bot.user_id
-    if str(message.from_user.id) == str(user_id):
+    if await check_user_id(message.from_user.id):
         if message.text.replace('/set_gpt_token', "").lstrip() == '':
             await bot.send_message(chat_id=user_id, text=f'❗ Токен не найден.')
 
@@ -262,15 +243,12 @@ async def set_gpt_token(message: types.Message):
             else:
                 await message.answer("❗ Токен недействителен.")
 
-    else:
-        await message.answer("❗ У вас нет доступа к этому боту!")
-
 
 # @dp.message_handler(commands=['set_downloads_path'])
 async def set_downloads_path(message: types.Message):
     global user_id
     user_id = create_bot.user_id
-    if str(message.from_user.id) == str(user_id):
+    if await check_user_id(message.from_user.id):
         if message.text.replace('/set_downloads_path', "").lstrip() == '':
             await bot.send_message(chat_id=user_id, text=f'❗ Путь не найден.')
 
@@ -302,19 +280,17 @@ async def set_downloads_path(message: types.Message):
                 await bot.send_message(chat_id=user_id, text=f'✅ Путь к загрузкам обновлён.\nНовый путь:'
                                                              f' {create_bot.script_path}')
 
-    else:
-        await message.answer("❗ У вас нет доступа к этому боту!")
 
 
-def commands_handlers_messages(dp: Dispatcher):
+def commands_handlers_messages(dispatcher: Dispatcher):
     try:
-        dp.register_message_handler(start, commands=['start'])
-        dp.register_message_handler(message_com, commands=['message'])
-        dp.register_message_handler(voice_com, commands=['voice'])
-        dp.register_message_handler(audio_com, commands=['audio'])
-        dp.register_message_handler(send_image, commands=['dalle'])
-        dp.register_message_handler(set_cmd_path, commands=['set_cmd_path'])
-        dp.register_message_handler(set_gpt_token, commands=['set_gpt_token'])
-        dp.register_message_handler(set_downloads_path, commands=['set_downloads_path'])
-    except:
-        pass
+        dispatcher.register_message_handler(start, commands=['start'])
+        dispatcher.register_message_handler(message_com, commands=['message'])
+        dispatcher.register_message_handler(voice_com, commands=['voice'])
+        dispatcher.register_message_handler(audio_com, commands=['audio'])
+        dispatcher.register_message_handler(send_image, commands=['dalle'])
+        dispatcher.register_message_handler(set_cmd_path, commands=['set_cmd_path'])
+        dispatcher.register_message_handler(set_gpt_token, commands=['set_gpt_token'])
+        dispatcher.register_message_handler(set_downloads_path, commands=['set_downloads_path'])
+    except Exception as e:
+        logger.py_logger.error(f"{e}\n\n")
