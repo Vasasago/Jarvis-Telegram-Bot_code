@@ -1,0 +1,5 @@
+Следующий трек:Next track
+Предыдущий трек:Prev track
+Включить музыку:Open music
+Выключить музыку:Stop music
+Пауза:Pause
