@@ -5,17 +5,14 @@ import create_bot
 import logger
 import markups
 
-from handlers import callbacks_messages_hands, files_hands, commands_hands, exceptions_hands
+from handlers import callbacks_messages_hands, files_hands, commands_hands, exceptions_hands, state_shutdown
 
-
-user_id = create_bot.user_id
 bot, dp = create_bot.create()
 
 bot_loop = asyncio.new_event_loop()
 
 # При старте
 async def on_startup(dp):
-    global user_id, bot
     user_id = create_bot.user_id
     if user_id != '':
         create_bot.console += 'Start polling...\n'
@@ -30,6 +27,7 @@ async def on_startup(dp):
 
 # При отключении
 async def on_shutdown(dp):
+    user_id = create_bot.user_id
     create_bot.console += 'Stop polling...\n'
     await bot.send_message(chat_id=user_id, text="📴 Бот отключен!")
     create_bot.flag = False
@@ -37,12 +35,12 @@ async def on_shutdown(dp):
 
 # Вызов регистраторов хендлеров
 def start_register_handlers():
-    global bot, dp
     if create_bot.flag:
         commands_hands.copy_bot()
         callbacks_messages_hands.copy_bot()
         files_hands.copy_bot()
 
+        state_shutdown.states(dp)
         commands_hands.commands_handlers_messages(dp)
         files_hands.message_handlers_files(dp)
         callbacks_messages_hands.callbacks_messages_handlers(dp)
@@ -51,7 +49,6 @@ def start_register_handlers():
 
 # Остановка поллинга
 def stop_bot():
-    global dp, bot_loop
     try:
         dp.stop_polling()
         bot_loop.stop()
@@ -63,7 +60,7 @@ def stop_bot():
 
 # Начало поллинга
 def start():
-    global bot_loop, dp, bot
+    global dp, bot
 
     bot, dp = create_bot.create()
 
