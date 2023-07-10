@@ -1,7 +1,7 @@
 list:
 - command:
     action: ahk
-    exe_path: ahk/Open music.exe
+    exe_path: ahk/Open music_vk.exe
     exe_args:
   voice:
     sounds:
